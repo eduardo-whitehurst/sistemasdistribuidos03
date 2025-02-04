@@ -77,12 +77,12 @@ def handle_client(client_socket, client_address, data):
                     client_socket.sendall(b"CLIENTNOTFOUND")
 
             elif command == 'LISTFILES':
-                if client_ip in data:
+                if client_ip in data and data[client_ip]:
                     files = data[client_ip]
                     response = "\n".join(f"{file['filename']} {file['size']}" for file in files)
                     client_socket.sendall(response.encode())
                 else:
-                    client_socket.sendall(b"")
+                    client_socket.sendall(b"NOFILES")
 
         except Exception as e:
             print(f"[ERROR] {client_ip}: {e}")
