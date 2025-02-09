@@ -61,9 +61,16 @@ def get_file(client_ip, filename, offset_start, offset_end=None):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((client_ip, CLIENT_PORT))
-            message = f"GET {filename} {offset_start} {offset_end}" if offset_end else f"GET {filename} {offset_start}"
+            message = f"GET {filename} {offset_start} {offset_end}\n" if offset_end else f"GET {filename} {offset_start}\n"
             client_socket.sendall(message.encode())
+
+            response = client_socket.recv(1024)
+            if response.startswith(b"ERROR:"):
+                print(response.decode())  # Exibe o erro sem criar o arquivo
+                return
+            
             with open(os.path.join(PUBLIC_FOLDER, filename), 'wb') as file:
+                file.write(response)
                 while True:
                     data = client_socket.recv(1024)
                     if not data:
@@ -89,9 +96,10 @@ def handle_file_request(client_socket):
                     data = file.read(offset_end - offset_start if offset_end else None)
                     client_socket.sendall(data)
             else:
-                client_socket.sendall(b"FILENOTFOUND")
+                client_socket.sendall(b"ERROR: File not found")
     except Exception as e:
         print(f"[ERROR] {e}")
+        client_socket.sendall(b"ERROR: Internal server error")
     finally:
         client_socket.close()
 
